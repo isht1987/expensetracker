@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Upload, DollarSign, Calendar, FileText, X, Plus } from 'lucide-react';
+import { useNotification } from '../contexts/NotificationContext';
 import api from '../lib/axios';
 import { Expense } from '../types';
 
@@ -8,7 +9,6 @@ interface ExpenseFormProps {
   onCancel?: () => void;
 }
 
-// Local fallback categories (will be replaced by backend choices when available)
 const FALLBACK_CATEGORIES = [
   'Fuel Expenses',
   'Meals',
@@ -21,6 +21,7 @@ const FALLBACK_CATEGORIES = [
 ];
 
 export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
+  const { notify } = useNotification();
   const [formData, setFormData] = useState({
     category: '',
     customCategory: '',
@@ -31,7 +32,6 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const [receiptImage, setReceiptImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
   const [categories, setCategories] = useState<string[]>(FALLBACK_CATEGORIES);
   const [recentReceipts, setRecentReceipts] = useState<Expense[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -39,18 +39,26 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        notify('error', 'Image size must be less than 10MB');
+        return;
+      }
+      
       setReceiptImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
+      notify('success', 'Image uploaded successfully');
     }
   };
 
   const removeImage = () => {
     setReceiptImage(null);
     setPreviewUrl(null);
+    notify('info', 'Image removed');
   };
 
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -64,11 +72,10 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
 
     // Validation for custom category
     if (formData.category === 'Others' && !formData.customCategory.trim()) {
-      setError('Please specify a custom category when selecting "Others"');
+      notify('error', 'Please specify a custom category when selecting "Others"');
       return;
     }
 
@@ -85,10 +92,11 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
       if (formData.description) submitData.append('description', formData.description);
       if (receiptImage) submitData.append('receipt_image', receiptImage);
 
-      // Use shared api instance (baseURL = /api)
       await api.post('/expenses/', submitData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+
+      notify('success', 'Expense added successfully');
 
       // Reset form
       setFormData({
@@ -101,63 +109,57 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
       setReceiptImage(null);
       setPreviewUrl(null);
       onSuccess();
-      // refresh history
+      
+      // Notify dashboard and other components that expenses updated
+      try { 
+        window.dispatchEvent(new Event('expenses:updated')); 
+      } catch (e) {
+        // Silent fail
+      }
+      
+      // Refresh history
       fetchHistory();
     } catch (err: any) {
       const errorMessage = err.response?.data?.custom_category?.[0]
         || err.response?.data?.message
         || 'Failed to add expense. Please try again.';
-      setError(errorMessage);
+      notify('error', errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    // Fetch category choices and recent receipts on mount
-    const fetchChoices = async () => {
-      try {
-  const resp = await api.get('/categories/choices/');
-        if (Array.isArray(resp.data) && resp.data.length > 0) {
-          // If API returns strings or objects
-          const names = resp.data.map((c: any) => (typeof c === 'string' ? c : c.name || c.label || ''))
-            .filter(Boolean);
-          if (names.length) setCategories(names);
-        }
-      } catch (e) {
-        // keep fallback categories
-        console.warn('Could not fetch category choices', e);
-      }
-    };
-
-    const fetchHistory = async () => {
-      try {
-  const resp = await api.get('/expenses/history/');
-        if (Array.isArray(resp.data)) {
-          setRecentReceipts(resp.data);
-        } else if (resp.data && Array.isArray(resp.data.results)) {
-          setRecentReceipts(resp.data.results);
-        }
-      } catch (e) {
-        console.warn('Could not fetch expense history', e);
-      }
-    };
-
     fetchChoices();
     fetchHistory();
-    // expose fetchHistory to component scope for refresh after submit
-    // (TypeScript: declare a local function name)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // separate fetch function used after submit
+  const fetchChoices = async () => {
+    try {
+      const resp = await api.get('/categories/choices/');
+      if (Array.isArray(resp.data) && resp.data.length > 0) {
+        const names = resp.data.map((c: any) => (typeof c === 'string' ? c : c.name || c.label || ''))
+          .filter(Boolean);
+        if (names.length) {
+          setCategories(names);
+          notify('info', 'Categories loaded');
+        }
+      }
+    } catch (e) {
+      notify('warning', 'Using default categories');
+    }
+  };
+
   const fetchHistory = async () => {
     try {
-  const resp = await api.get('/expenses/history/');
-      if (Array.isArray(resp.data)) setRecentReceipts(resp.data);
-      else if (resp.data && Array.isArray(resp.data.results)) setRecentReceipts(resp.data.results);
+      const resp = await api.get('/expenses/history/');
+      if (Array.isArray(resp.data)) {
+        setRecentReceipts(resp.data);
+      } else if (resp.data && Array.isArray(resp.data.results)) {
+        setRecentReceipts(resp.data.results);
+      }
     } catch (e) {
-      console.warn('Could not fetch expense history', e);
+      // Silent fail for history
     }
   };
 
@@ -175,12 +177,6 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
           </button>
         )}
       </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-          {error}
-        </div>
-      )}
 
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -294,26 +290,35 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         </div>
 
         {/* Receipt history panel (collapsible) */}
-        {showHistory && (
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-4">
-            <h4 className="font-semibold text-slate-800 mb-2">Recent Receipts</h4>
-            {recentReceipts.length === 0 ? (
-              <p className="text-sm text-slate-500">No recent receipts</p>
-            ) : (
-              <ul className="space-y-2 max-h-40 overflow-y-auto">
-                {recentReceipts.slice(0, 10).map((r) => (
-                  <li key={r.id} className="flex justify-between items-center">
-                    <div>
-                      <p className="text-sm font-medium">${parseFloat(r.amount).toFixed(2)}</p>
-                      <p className="text-xs text-slate-500">{r.category_name || r.category}</p>
-                    </div>
-                    <div className="text-xs text-slate-400">{new Date(r.date).toLocaleDateString()}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+        <div className="border border-slate-200 rounded-lg">
+          <button
+            type="button"
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition"
+          >
+            <span className="font-medium text-slate-700">Recent Receipts</span>
+            <span className="text-xs text-slate-500">{recentReceipts.length} items</span>
+          </button>
+          {showHistory && (
+            <div className="bg-slate-50 p-4 border-t border-slate-200">
+              {recentReceipts.length === 0 ? (
+                <p className="text-sm text-slate-500">No recent receipts</p>
+              ) : (
+                <ul className="space-y-2 max-h-40 overflow-y-auto">
+                  {recentReceipts.slice(0, 10).map((r) => (
+                    <li key={r.id} className="flex justify-between items-center bg-white p-2 rounded">
+                      <div>
+                        <p className="text-sm font-medium">${parseFloat(r.amount).toFixed(2)}</p>
+                        <p className="text-xs text-slate-500">{r.category_name || r.category}</p>
+                      </div>
+                      <div className="text-xs text-slate-400">{new Date(r.date).toLocaleDateString()}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">

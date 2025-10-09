@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { LogOut, TrendingUp, Receipt, DollarSign, Download } from 'lucide-react';
+import { LogOut, TrendingUp, Receipt, DollarSign, Download, Menu } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import ExpenseForm from './ExpenseForm';
 import Sidebar from './Sidebar';
 import RecentExpenses from './RecentExpenses';
@@ -9,12 +10,17 @@ import { DashboardStats } from '../types';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const { notify } = useNotification();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [activeSection, setActiveSection] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   useEffect(() => {
     fetchStats();
+    const onUpdated = () => fetchStats();
+    window.addEventListener('expenses:updated', onUpdated as EventListener);
+    return () => window.removeEventListener('expenses:updated', onUpdated as EventListener);
   }, []);
 
   const fetchStats = async () => {
@@ -23,12 +29,13 @@ export default function Dashboard() {
       const payload = response.data?.data ?? response.data;
       setStats(payload);
     } catch (err) {
-      console.error('Error fetching stats:', err);
+      notify('error', 'Failed to load dashboard stats');
     }
   };
 
   const handleExport = async () => {
     try {
+      notify('info', 'Preparing export...');
       const response = await api.get('/export/excel/', {
         responseType: 'blob',
       });
@@ -39,8 +46,9 @@ export default function Dashboard() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      notify('success', 'Expenses exported successfully');
     } catch (err) {
-      console.error('Error exporting expenses:', err);
+      notify('error', 'Failed to export expenses');
     }
   };
 
@@ -48,7 +56,6 @@ export default function Dashboard() {
     fetchStats();
     setShowForm(false);
   };
-  
 
   const renderContent = () => {
     switch (activeSection) {
@@ -179,15 +186,25 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-      
+      <Sidebar
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        isCollapsed={sidebarCollapsed}
+        onCollapseChange={setSidebarCollapsed}
+      />
       {/* Main Content */}
-      <div className="lg:ml-64 min-h-screen">
+      <div className={`${sidebarCollapsed ? '' : 'lg:ml-64'} min-h-screen transition-all duration-300`}>
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-slate-200 lg:ml-0">
+        <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 lg:ml-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
-              <div className="lg:hidden">
+              <div className="lg:hidden flex items-center gap-3">
+                <button
+                  onClick={() => setSidebarCollapsed(false)}
+                  className="p-2 bg-white rounded-lg shadow-sm border border-slate-200"
+                >
+                  <Menu className="w-5 h-5 text-slate-700" />
+                </button>
                 <h1 className="text-xl font-bold text-slate-800">Expense Tracker</h1>
               </div>
               <div className="hidden lg:block">
@@ -217,7 +234,7 @@ export default function Dashboard() {
         </header>
 
         {/* Page Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-16">
           {renderContent()}
         </main>
       </div>

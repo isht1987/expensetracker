@@ -54,6 +54,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
         password,
       });
+      // If backend returns an error envelope (status: 'error') or missing token, treat as failure
+      if (!response?.data || response.data.status === 'error' || !response.data?.data?.token) {
+        throw { response };
+      }
 
       const { token, user_id, email: userEmail, username, company_name } = response.data.data;
       
@@ -69,13 +73,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Login failed');
+      // Rethrow original error so callers (UI) can inspect response.data for field errors
+      throw error;
     }
   };
 
   const register = async (data: RegisterData) => {
     try {
       const response = await api.post('/auth/register/', data);
+      if (!response?.data || response.data.status === 'error' || !response.data?.data?.token) {
+        throw { response };
+      }
       const { token, user_id, email: userEmail, username: userName, company_name } = response.data.data;
       localStorage.setItem('auth_token', token);
       const userData = {
@@ -87,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Registration failed');
+      throw error;
     }
   };
 

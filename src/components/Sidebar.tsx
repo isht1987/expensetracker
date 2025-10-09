@@ -1,9 +1,10 @@
-import { useState } from 'react';
 import { Home, Receipt, TrendingUp, Settings, Menu, X } from 'lucide-react';
 
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  isCollapsed: boolean;
+  onCollapseChange: (collapsed: boolean) => void;
 }
 
 const menuItems = [
@@ -13,8 +14,7 @@ const menuItems = [
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 
-export default function Sidebar({ activeSection, onSectionChange }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export default function Sidebar({ activeSection, onSectionChange, isCollapsed, onCollapseChange }: SidebarProps) {
 
   return (
     <>
@@ -22,7 +22,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
       {!isCollapsed && (
         <div 
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setIsCollapsed(true)}
+          onClick={() => onCollapseChange(true)}
         />
       )}
       
@@ -38,7 +38,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
             </div>
           )}
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => onCollapseChange(!isCollapsed)}
             className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
           >
             {isCollapsed ? <Menu className="w-5 h-5" /> : <X className="w-5 h-5" />}
@@ -53,9 +53,15 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
               
               return (
                 <li key={item.id}>
-                  <button
-                    onClick={() => onSectionChange(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${
+                    <button
+                      onClick={() => {
+                        onSectionChange(item.id);
+                        // Auto-close sidebar on small screens (below lg breakpoint)
+                        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+                          onCollapseChange(true);
+                        }
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group ${
                       isActive 
                         ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                         : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -90,15 +96,7 @@ export default function Sidebar({ activeSection, onSectionChange }: SidebarProps
         )}
       </div>
 
-      {/* Mobile menu button */}
-      <button
-        onClick={() => setIsCollapsed(false)}
-        className={`fixed top-4 left-4 z-30 p-3 bg-white rounded-lg shadow-lg border border-slate-200 lg:hidden transition-opacity ${
-          isCollapsed ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-      >
-        <Menu className="w-5 h-5 text-slate-600" />
-      </button>
+      {/* Mobile menu button moved to Dashboard header to avoid overlapping the heading */}
     </>
   );
 }
