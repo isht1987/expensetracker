@@ -192,16 +192,17 @@ export default function Dashboard() {
         isCollapsed={sidebarCollapsed}
         onCollapseChange={setSidebarCollapsed}
       />
-      {/* Main Content */}
-      <div className={`${sidebarCollapsed ? '' : 'lg:ml-64'} min-h-screen transition-all duration-300`}>
-        {/* Header */}
-        <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-slate-200 lg:ml-0">
+      
+      {/* Main Content - Always have left margin on desktop */}
+      <div className="lg:ml-64 min-h-screen transition-all duration-300">
+        {/* Header - Fixed with proper z-index */}
+        <header className="fixed top-0 right-0 left-0 lg:left-64 z-40 bg-white shadow-sm border-b border-slate-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
               <div className="lg:hidden flex items-center gap-3">
                 <button
                   onClick={() => setSidebarCollapsed(false)}
-                  className="p-2 bg-white rounded-lg shadow-sm border border-slate-200"
+                  className="p-2 bg-white rounded-lg shadow-sm border border-slate-200 hover:bg-slate-50 transition-colors"
                 >
                   <Menu className="w-5 h-5 text-slate-700" />
                 </button>
@@ -233,8 +234,8 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-16">
+        {/* Page Content - Add top padding to account for fixed header */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
           {renderContent()}
         </main>
       </div>

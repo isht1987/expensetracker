@@ -35,6 +35,13 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const [categories, setCategories] = useState<string[]>(FALLBACK_CATEGORIES);
   const [recentReceipts, setRecentReceipts] = useState<Expense[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  // Inline field errors
+  const [dateError, setDateError] = useState('');
+  const [categoryError, setCategoryError] = useState('');
+  const [customCategoryError, setCustomCategoryError] = useState('');
+  const [amountError, setAmountError] = useState('');
+  const [descriptionError, setDescriptionError] = useState('');
+  const [imageError, setImageError] = useState('');
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,9 +80,33 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Basic validation: all fields required
+    // clear previous field errors
+    setDateError(''); setCategoryError(''); setCustomCategoryError(''); setAmountError(''); setDescriptionError(''); setImageError('');
+
+    if (!formData.date) {
+      setDateError('Please select a date');
+      return;
+    }
+    if (!formData.category) {
+      setCategoryError('Please select a category');
+      return;
+    }
     // Validation for custom category
     if (formData.category === 'Others' && !formData.customCategory.trim()) {
-      notify('error', 'Please specify a custom category when selecting "Others"');
+      setCustomCategoryError('Please specify a custom category when selecting "Others"');
+      return;
+    }
+    if (!formData.amount || Number(formData.amount) <= 0) {
+      setAmountError('Please enter a valid amount greater than 0');
+      return;
+    }
+    if (!formData.description || !formData.description.trim()) {
+      setDescriptionError('Please add a description for the expense');
+      return;
+    }
+    if (!receiptImage) {
+      setImageError('Please upload a receipt image');
       return;
     }
 
@@ -96,7 +127,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      notify('success', 'Expense added successfully');
+  notify('success', 'Expense added successfully');
 
       // Reset form
       setFormData({
@@ -123,7 +154,18 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
       const errorMessage = err.response?.data?.custom_category?.[0]
         || err.response?.data?.message
         || 'Failed to add expense. Please try again.';
-      notify('error', errorMessage);
+      // if server returned a field-specific problem, set inline errors where possible
+      if (err.response?.data?.errors) {
+        const errs = err.response.data.errors;
+        if (errs.date) setDateError(errs.date[0]);
+        if (errs.category) setCategoryError(errs.category[0]);
+        if (errs.custom_category) setCustomCategoryError(errs.custom_category[0]);
+        if (errs.amount) setAmountError(errs.amount[0]);
+        if (errs.description) setDescriptionError(errs.description[0]);
+        if (errs.receipt_image) setImageError(errs.receipt_image[0]);
+      } else {
+        notify('error', errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -189,10 +231,11 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
               <input
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                onChange={(e) => { setFormData({ ...formData, date: e.target.value }); setDateError(''); }}
+                className={`w-full pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${dateError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
                 required
               />
+              {dateError && <p className="text-sm text-red-600 mt-2">{dateError}</p>}
             </div>
           </div>
 
@@ -204,7 +247,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
               <select
                 value={formData.category}
                 onChange={handleCategoryChange}
-                className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                className={`flex-1 px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${categoryError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
                 required
               >
                 <option value="">Select a category</option>
@@ -214,6 +257,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
                   </option>
                 ))}
               </select>
+              {categoryError && <p className="text-sm text-red-600 mt-2">{categoryError}</p>}
             </div>
           </div>
         </div>
@@ -227,11 +271,12 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             <input
               type="text"
               value={formData.customCategory}
-              onChange={(e) => setFormData({ ...formData, customCategory: e.target.value })}
-              className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
-              placeholder="Enter custom category name"
-              required
+                onChange={(e) => { setFormData({ ...formData, customCategory: e.target.value }); setCustomCategoryError(''); }}
+                className={`w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${customCategoryError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
+                placeholder="Enter custom category name"
+                aria-required
             />
+              {customCategoryError && <p className="text-sm text-red-600 mt-2">{customCategoryError}</p>}
           </div>
         )}
 
@@ -245,11 +290,12 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
               type="number"
               step="0.01"
               value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+              onChange={(e) => { setFormData({ ...formData, amount: e.target.value }); setAmountError(''); }}
+              className={`w-full pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${amountError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
               placeholder="0.00"
-              required
+              aria-required
             />
+            {amountError && <p className="text-sm text-red-600 mt-2">{amountError}</p>}
           </div>
         </div>
 
@@ -278,7 +324,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleImageChange}
+                  onChange={(e) => { handleImageChange(e); setImageError(''); }}
                   className="hidden"
                 />
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-2" />
@@ -286,6 +332,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
                 <p className="text-sm text-slate-400 mt-1">PNG, JPG up to 10MB</p>
               </label>
             )}
+            {imageError && <p className="text-sm text-red-600 mt-2">{imageError}</p>}
           </div>
         </div>
 
@@ -328,11 +375,12 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             <FileText className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full pl-11 pr-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none"
+              onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setDescriptionError(''); }}
+              className={`w-full pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none ${descriptionError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
               placeholder="Add notes about this expense..."
               rows={4}
             />
+            {descriptionError && <p className="text-sm text-red-600 mt-2">{descriptionError}</p>}
           </div>
         </div>
 
