@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Upload, DollarSign, Calendar, FileText, X, Plus } from 'lucide-react';
 import { useNotification } from '../contexts/NotificationContext';
 import api from '../lib/axios';
@@ -22,6 +22,7 @@ const FALLBACK_CATEGORIES = [
 
 export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const { notify } = useNotification();
+  const formRef = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState({
     category: '',
     customCategory: '',
@@ -33,7 +34,6 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>(FALLBACK_CATEGORIES);
-  const [recentReceipts, setRecentReceipts] = useState<Expense[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   // Inline field errors
   const [dateError, setDateError] = useState('');
@@ -42,6 +42,16 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const [amountError, setAmountError] = useState('');
   const [descriptionError, setDescriptionError] = useState('');
   const [imageError, setImageError] = useState('');
+
+  // Auto-scroll when form mounts
+  useEffect(() => {
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }
+  }, []);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,7 +137,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-  notify('success', 'Expense added successfully');
+      notify('success', 'Expense added successfully');
 
       // Reset form
       setFormData({
@@ -149,7 +159,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
       }
       
       // Refresh history
-      fetchHistory();
+ 
     } catch (err: any) {
       const errorMessage = err.response?.data?.custom_category?.[0]
         || err.response?.data?.message
@@ -173,7 +183,6 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
 
   useEffect(() => {
     fetchChoices();
-    fetchHistory();
   }, []);
 
   const fetchChoices = async () => {
@@ -192,21 +201,10 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
     }
   };
 
-  const fetchHistory = async () => {
-    try {
-      const resp = await api.get('/expenses/history/');
-      if (Array.isArray(resp.data)) {
-        setRecentReceipts(resp.data);
-      } else if (resp.data && Array.isArray(resp.data.results)) {
-        setRecentReceipts(resp.data.results);
-      }
-    } catch (e) {
-      // Silent fail for history
-    }
-  };
+  
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8">
+    <div ref={formRef} className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 scroll-mt-24">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-slate-800">New Receipt</h2>
         {onCancel && (
@@ -220,19 +218,26 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         )}
       </div>
 
-      <div className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Date
             </label>
             <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                <Calendar className="w-5 h-5 text-slate-400" />
+              </div>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => { setFormData({ ...formData, date: e.target.value }); setDateError(''); }}
-                className={`w-full pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${dateError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
+                className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition appearance-none ${dateError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
+                style={{ 
+                  colorScheme: 'light',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'textfield'
+                }}
                 required
               />
               {dateError && <p className="text-sm text-red-600 mt-2">{dateError}</p>}
@@ -243,11 +248,11 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Category
             </label>
-            <div className="flex items-center gap-2">
+            <div>
               <select
                 value={formData.category}
-                onChange={handleCategoryChange}
-                className={`flex-1 px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${categoryError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
+                onChange={(e) => { handleCategoryChange(e); setCategoryError(''); }}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${categoryError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
                 required
               >
                 <option value="">Select a category</option>
@@ -271,12 +276,11 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             <input
               type="text"
               value={formData.customCategory}
-                onChange={(e) => { setFormData({ ...formData, customCategory: e.target.value }); setCustomCategoryError(''); }}
-                className={`w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${customCategoryError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
-                placeholder="Enter custom category name"
-                aria-required
+              onChange={(e) => { setFormData({ ...formData, customCategory: e.target.value }); setCustomCategoryError(''); }}
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${customCategoryError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
+              placeholder="Enter custom category name"
             />
-              {customCategoryError && <p className="text-sm text-red-600 mt-2">{customCategoryError}</p>}
+            {customCategoryError && <p className="text-sm text-red-600 mt-2">{customCategoryError}</p>}
           </div>
         )}
 
@@ -285,15 +289,17 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             Amount
           </label>
           <div className="relative">
-            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+              <DollarSign className="w-5 h-5 text-slate-400" />
+            </div>
             <input
               type="number"
               step="0.01"
               value={formData.amount}
               onChange={(e) => { setFormData({ ...formData, amount: e.target.value }); setAmountError(''); }}
-              className={`w-full pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${amountError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
+              className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${amountError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
               placeholder="0.00"
-              aria-required
+              required
             />
             {amountError && <p className="text-sm text-red-600 mt-2">{amountError}</p>}
           </div>
@@ -332,39 +338,13 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
                 <p className="text-sm text-slate-400 mt-1">PNG, JPG up to 10MB</p>
               </label>
             )}
-            {imageError && <p className="text-sm text-red-600 mt-2">{imageError}</p>}
           </div>
+          {imageError && <p className="text-sm text-red-600 mt-2">{imageError}</p>}
         </div>
 
         {/* Receipt history panel (collapsible) */}
-        <div className="border border-slate-200 rounded-lg">
-          <button
-            type="button"
-            onClick={() => setShowHistory(!showHistory)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 transition"
-          >
-            <span className="font-medium text-slate-700">Recent Receipts</span>
-            <span className="text-xs text-slate-500">{recentReceipts.length} items</span>
-          </button>
-          {showHistory && (
-            <div className="bg-slate-50 p-4 border-t border-slate-200">
-              {recentReceipts.length === 0 ? (
-                <p className="text-sm text-slate-500">No recent receipts</p>
-              ) : (
-                <ul className="space-y-2 max-h-40 overflow-y-auto">
-                  {recentReceipts.slice(0, 10).map((r) => (
-                    <li key={r.id} className="flex justify-between items-center bg-white p-2 rounded">
-                      <div>
-                        <p className="text-sm font-medium">${parseFloat(r.amount).toFixed(2)}</p>
-                        <p className="text-xs text-slate-500">{r.category_name || r.category}</p>
-                      </div>
-                      <div className="text-xs text-slate-400">{new Date(r.date).toLocaleDateString()}</div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
+        <div className="border border-slate-200 rounded-lg overflow-hidden">
+          
         </div>
 
         <div>
@@ -372,11 +352,13 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             Add Additional Comments
           </label>
           <div className="relative">
-            <FileText className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+            <div className="absolute left-3 top-3 pointer-events-none z-10">
+              <FileText className="w-5 h-5 text-slate-400" />
+            </div>
             <textarea
               value={formData.description}
               onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setDescriptionError(''); }}
-              className={`w-full pl-11 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none ${descriptionError ? 'border-red-400 ring-1 ring-red-300' : 'border border-slate-300'}`}
+              className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none ${descriptionError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
               placeholder="Add notes about this expense..."
               rows={4}
             />
@@ -384,7 +366,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
           <button
             type="submit"
             disabled={isLoading}
@@ -403,7 +385,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             </button>
           )}
         </div>
-      </div>
-    </form>
+      </form>
+    </div>
   );
 }

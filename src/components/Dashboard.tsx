@@ -57,6 +57,17 @@ export default function Dashboard() {
     setShowForm(false);
   };
 
+  const handleShowForm = () => {
+    setShowForm(true);
+    // Small delay to ensure the form is rendered before scrolling
+    setTimeout(() => {
+      const formElement = document.querySelector('[data-form="expense-form"]');
+      if (formElement) {
+        formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
   const renderContent = () => {
     switch (activeSection) {
       case 'recent-expenses':
@@ -134,7 +145,7 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-slate-800 mb-4">Quick Actions</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <button
-                  onClick={() => setShowForm(true)}
+                  onClick={handleShowForm}
                   className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors"
                 >
                   <Receipt className="w-5 h-5" />
@@ -159,10 +170,12 @@ export default function Dashboard() {
 
             {/* Add Expense Form */}
             {showForm && (
-              <ExpenseForm
-                onSuccess={handleFormSuccess}
-                onCancel={() => setShowForm(false)}
-              />
+              <div data-form="expense-form">
+                <ExpenseForm
+                  onSuccess={handleFormSuccess}
+                  onCancel={() => setShowForm(false)}
+                />
+              </div>
             )}
 
             {/* Welcome Message */}
@@ -206,7 +219,7 @@ export default function Dashboard() {
                 >
                   <Menu className="w-5 h-5 text-slate-700" />
                 </button>
-                <h1 className="text-xl font-bold text-slate-800">Expense Tracker</h1>
+                <h1 className="text-xl font-bold text-slate-800">The Billman</h1>
               </div>
               <div className="hidden lg:block">
                 <h1 className="text-2xl font-bold text-slate-800 capitalize">

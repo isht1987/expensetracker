@@ -1,4 +1,4 @@
-import { Home, Receipt, TrendingUp, Settings, Menu, X } from 'lucide-react';
+import { Home, Receipt, TrendingUp, Settings, X } from 'lucide-react';
 
 interface SidebarProps {
   activeSection: string;
@@ -34,7 +34,7 @@ export default function Sidebar({ activeSection, onSectionChange, isCollapsed, o
         {/* Header section */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Expense Tracker</h1>
+            <h1 className="text-xl font-bold text-slate-800">The Billman</h1>
             <p className="text-sm text-slate-500">Manage your expenses</p>
           </div>
           <button
