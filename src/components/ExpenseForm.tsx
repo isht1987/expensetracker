@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { Upload, DollarSign, Calendar, FileText, X, Plus } from 'lucide-react';
 import { useNotification } from '../contexts/NotificationContext';
 import api from '../lib/axios';
-import { Expense } from '../types';
 
 interface ExpenseFormProps {
   onSuccess: () => void;
@@ -34,7 +33,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>(FALLBACK_CATEGORIES);
-  const [showHistory, setShowHistory] = useState(false);
+  // history panel state removed (not used) to avoid unused variable lint errors
   // Inline field errors
   const [dateError, setDateError] = useState('');
   const [categoryError, setCategoryError] = useState('');

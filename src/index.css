@@ -1,3 +1,34 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Prevent iOS Safari from auto-zooming on focus by ensuring form controls have at least 16px font size */
+input,
+textarea,
+select,
+button {
+	font-size: 16px;
+}
+
+@layer components {
+	/* Logo animation: container shrinks slightly while inner image zooms */
+	.logo-anim-container {
+		transition: transform 520ms cubic-bezier(.2,.9,.2,1), box-shadow 520ms;
+		transform-origin: center;
+	}
+
+	.logo-anim-container.shrunk {
+		transform: scale(0.82);
+		box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+	}
+
+	.logo-anim-img {
+		transition: transform 520ms cubic-bezier(.2,.9,.2,1);
+		transform-origin: center;
+		will-change: transform;
+	}
+
+	.logo-anim-img.zoomed {
+		transform: scale(1.18);
+	}
+}

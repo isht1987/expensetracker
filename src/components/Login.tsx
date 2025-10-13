@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, type SyntheticEvent, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, UserPlus, Mail, Lock, User, Building2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import Logo from './Logo';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -19,8 +20,15 @@ export default function Login() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { login, register } = useAuth();
+  const [logoAnim, setLogoAnim] = useState(false);
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    // small timeout so animation runs after initial paint
+    const t = setTimeout(() => setLogoAnim(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
+  const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
     setError('');
     setEmailError('');
@@ -46,7 +54,7 @@ export default function Login() {
           company_name: companyName,
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       const anyErr = err;
       let nf;
       try {
@@ -71,21 +79,21 @@ export default function Login() {
     }
   };
 
-  const passwordStrength = (pass) => {
+  const passwordStrength = (pass: string) => {
     if (pass.length === 0) return 0;
     if (pass.length < 6) return 1;
     if (pass.length < 10) return 2;
     return 3;
   };
 
-  const getStrengthColor = (strength) => {
+  const getStrengthColor = (strength: number) => {
     if (strength === 1) return 'bg-red-500';
     if (strength === 2) return 'bg-yellow-500';
     if (strength === 3) return 'bg-green-500';
     return 'bg-gray-300';
   };
 
-  const getStrengthText = (strength) => {
+  const getStrengthText = (strength: number) => {
     if (strength === 1) return 'Weak';
     if (strength === 2) return 'Medium';
     if (strength === 3) return 'Strong';
@@ -100,21 +108,20 @@ export default function Login() {
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
       </div>
 
-      <div className="relative w-full max-w-md">
+  <div className="relative w-full max-w-sm">
         {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border border-white/20">
           {/* Header */}
-          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 sm:px-8 py-8 sm:py-10 text-center relative overflow-hidden">
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 sm:px-8 py-6 sm:py-8 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-black/5"></div>
             <div className="relative">
-              <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white/20 backdrop-blur-sm rounded-2xl mb-4 shadow-lg">
-                {isLogin ? (
-                  <LogIn className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                ) : (
-                  <UserPlus className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                )}
+              {/* Logo */}
+              <div className="inline-flex flex-col items-center justify-center mb-4">
+                <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl shadow-lg flex items-center justify-center overflow-hidden mb-4 logo-anim-container ${logoAnim ? 'shrunk' : ''}`}>
+                  <Logo className={`w-full h-full object-cover logo-anim-img ${logoAnim ? 'zoomed' : ''}`} />
+                </div>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">The Billman</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">The Billman</h1>
               <p className="text-emerald-50 text-sm sm:text-base">
                 {isLogin ? 'Welcome back! Sign in to continue' : 'Create your account to get started'}
               </p>

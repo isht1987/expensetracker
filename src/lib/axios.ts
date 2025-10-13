@@ -1,10 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api/', // Backend API root per user's setup
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/',
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15000, // 15s timeout to prevent long-hanging requests
 });
 
 api.interceptors.request.use(
