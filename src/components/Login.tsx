@@ -1,7 +1,8 @@
-import { useState, type SyntheticEvent } from 'react';
+import { useState, type SyntheticEvent, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { LogIn, UserPlus, Mail, Lock, User, Building2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import Logo from './Logo';
+import LogoSvg from '../../logo/Black Logo.svg';
+import momcakeFont from '../font/Momcake-Thin.otf';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
@@ -20,6 +21,21 @@ export default function Login() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { login, register } = useAuth();
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @font-face {
+        font-family: 'Momcake';
+        src: url('${momcakeFont}') format('opentype');
+        font-weight: 100;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const handleSubmit = async (e: SyntheticEvent) => {
     e.preventDefault();
@@ -95,33 +111,28 @@ export default function Login() {
 
   return (
     <div className="login-root min-h-screen bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '1s'}}></div>
       </div>
 
       <div className="relative w-full max-w-md">
-        {/* Main Card */}
         <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl overflow-hidden border border-white/20">
-          {/* Header */}
           <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 sm:px-8 py-8 sm:py-10 text-center relative overflow-hidden">
             <div className="absolute inset-0 bg-black/5"></div>
             <div className="relative">
-              {/* Logo */}
               <div className="inline-flex items-center justify-center mb-4">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-2xl shadow-lg flex items-center justify-center overflow-hidden p-3">
-                  <Logo className="w-12 h-12 sm:w-16 sm:h-16" />
+                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-2xl shadow-lg flex items-center justify-center overflow-hidden p-1">
+                  <img src={LogoSvg} alt="The Billman Logo" className="w-full h-full object-contain" />
                 </div>
               </div>
-              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">The Billman</h1>
+              <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2 font-momcake">The Billman</h1>
               <p className="text-emerald-50 text-sm sm:text-base">
                 {isLogin ? 'Welcome back! Sign in to continue' : 'Create your account to get started'}
               </p>
             </div>
           </div>
 
-          {/* Form Container */}
           <div className="px-6 sm:px-8 py-6 sm:py-8">
             {error && (
               <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-start gap-3">
@@ -135,7 +146,6 @@ export default function Login() {
             <div className="space-y-4 sm:space-y-5">
               {!isLogin && (
                 <>
-                  {/* Username */}
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-slate-700">Username</label>
                     <div className="relative">
@@ -153,7 +163,6 @@ export default function Login() {
                     </div>
                   </div>
 
-                  {/* Name Fields - Side by Side on Desktop */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-slate-700">First Name</label>
@@ -177,7 +186,6 @@ export default function Login() {
                     </div>
                   </div>
 
-                  {/* Company Name */}
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-slate-700">Company Name</label>
                     <div className="relative">
@@ -196,7 +204,6 @@ export default function Login() {
                 </>
               )}
 
-              {/* Email */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700">Email Address</label>
                 <div className="relative">
@@ -222,7 +229,6 @@ export default function Login() {
                 )}
               </div>
 
-              {/* Password */}
               <div className="space-y-2">
                 <label className="block text-sm font-semibold text-slate-700">Password</label>
                 <div className="relative">
@@ -272,7 +278,6 @@ export default function Login() {
                 )}
               </div>
 
-              {/* Confirm Password */}
               {!isLogin && (
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-slate-700">Confirm Password</label>
@@ -305,7 +310,6 @@ export default function Login() {
                 </div>
               )}
 
-              {/* Submit Button */}
               <button
                 type="button"
                 onClick={handleSubmit}
@@ -326,7 +330,6 @@ export default function Login() {
               </button>
             </div>
 
-            {/* Toggle Login/Register */}
             <div className="mt-6 sm:mt-8 text-center">
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
@@ -354,7 +357,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-slate-500 text-xs sm:text-sm mt-6 px-4">
           By continuing, you agree to our Terms of Service and Privacy Policy
         </p>

@@ -1,4 +1,6 @@
 import { Home, Receipt, TrendingUp, Settings, X } from 'lucide-react';
+import { useEffect } from 'react';
+import momcakeFont from '../font/Momcake-Thin.otf';
 
 interface SidebarProps {
   activeSection: string;
@@ -15,6 +17,21 @@ const menuItems = [
 ];
 
 export default function Sidebar({ activeSection, onSectionChange, isCollapsed, onCollapseChange }: SidebarProps) {
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @font-face {
+        font-family: 'Momcake';
+        src: url('${momcakeFont}') format('opentype');
+        font-weight: 100;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   return (
     <>
@@ -34,7 +51,7 @@ export default function Sidebar({ activeSection, onSectionChange, isCollapsed, o
         {/* Header section */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">The Billman</h1>
+            <h1 className="text-xl font-bold text-slate-800 font-momcake">The Billman</h1>
             <p className="text-sm text-slate-500">Manage your expenses</p>
           </div>
           <button

@@ -190,10 +190,19 @@ export default function RecentExpenses() {
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">Recent Expenses</h1>
           <p className="text-sm sm:text-base text-slate-500 mt-1">View and manage all your expense receipts</p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-slate-600 bg-slate-50 rounded-lg p-3">
-          <span className="font-medium">{filteredExpenses.length} expenses</span>
-          <span className="text-slate-400">•</span>
-          <span className="font-medium text-emerald-600">${filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0).toFixed(2)} total</span>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200">
+            <p className="text-xs sm:text-sm text-emerald-700 font-medium mb-1">Total Amount</p>
+            <p className="text-2xl sm:text-3xl font-bold text-emerald-900">
+              ${filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount), 0).toFixed(2)}
+            </p>
+          </div>
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
+            <p className="text-xs sm:text-sm text-slate-600 font-medium mb-1">Total Transactions</p>
+            <p className="text-2xl sm:text-3xl font-bold text-slate-800">
+              {filteredExpenses.length}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -312,6 +321,8 @@ export default function RecentExpenses() {
                       src={expense.receipt_image as string}
                       alt="Receipt"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center">
                       <span className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-sm font-medium">
@@ -373,6 +384,7 @@ export default function RecentExpenses() {
                 src={modalImage} 
                 alt="Receipt" 
                 className="mx-auto max-h-[80vh] w-auto rounded-lg"
+                decoding="async"
               />
             </div>
           </div>
