@@ -159,7 +159,7 @@ export default function Dashboard() {
 
             {stats && currentMonthStats && (
               <div className="space-y-6">
-                {/* Top Row: Last Month Transactions & Total Transactions */}
+                {/* Top Row: Last Month Transactions & This Month Transactions */}
                 <div className="grid grid-cols-2 gap-4 md:gap-6">
                   {/* Last Month Transactions */}
                   <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-slate-200">
@@ -176,13 +176,13 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Total Transactions */}
+                  {/* This Month Transactions */}
                   <div className="bg-white rounded-xl shadow-sm p-4 md:p-6 border border-slate-200">
                     <div className="flex flex-col h-full">
-                      <p className="text-xs md:text-sm font-medium text-slate-500 mb-3">Total Transactions</p>
+                      <p className="text-xs md:text-sm font-medium text-slate-500 mb-3">This Month Transactions</p>
                       <div className="flex items-end justify-between mt-auto">
                         <p className="text-2xl md:text-3xl font-bold text-slate-800">
-                          {typeof (stats as any).current_year?.count !== 'undefined' ? (stats as any).current_year.count : (stats.total_expenses ?? 0)}
+                          {currentMonthStats?.count ?? 0}
                         </p>
                         <div className="bg-blue-100 rounded-full p-2 md:p-3">
                           <TrendingUp className="w-5 h-5 md:w-6 md:h-6 text-blue-600" />
