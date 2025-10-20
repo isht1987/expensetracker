@@ -33,7 +33,7 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>(FALLBACK_CATEGORIES);
-  // history panel state removed (not used) to avoid unused variable lint errors
+  
   // Inline field errors
   const [dateError, setDateError] = useState('');
   const [categoryError, setCategoryError] = useState('');
@@ -89,33 +89,43 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic validation: all fields required
-    // clear previous field errors
-    setDateError(''); setCategoryError(''); setCustomCategoryError(''); setAmountError(''); setDescriptionError(''); setImageError('');
+    // Clear previous field errors
+    setDateError('');
+    setCategoryError('');
+    setCustomCategoryError('');
+    setAmountError('');
+    setDescriptionError('');
+    setImageError('');
+
+    // Validation
+    let hasError = false;
 
     if (!formData.date) {
       setDateError('Please select a date');
-      return;
+      hasError = true;
     }
     if (!formData.category) {
       setCategoryError('Please select a category');
-      return;
+      hasError = true;
     }
-    // Validation for custom category
     if (formData.category === 'Others' && !formData.customCategory.trim()) {
       setCustomCategoryError('Please specify a custom category when selecting "Others"');
-      return;
+      hasError = true;
     }
     if (!formData.amount || Number(formData.amount) <= 0) {
       setAmountError('Please enter a valid amount greater than 0');
-      return;
+      hasError = true;
     }
     if (!formData.description || !formData.description.trim()) {
       setDescriptionError('Please add a description for the expense');
-      return;
+      hasError = true;
     }
     if (!receiptImage) {
       setImageError('Please upload a receipt image');
+      hasError = true;
+    }
+
+    if (hasError) {
       return;
     }
 
@@ -157,8 +167,6 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         // Silent fail
       }
       
-      // Refresh history
- 
     } catch (err: any) {
       const errorMessage = err.response?.data?.custom_category?.[0]
         || err.response?.data?.message
@@ -200,8 +208,6 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
     }
   };
 
-  
-
   return (
     <div ref={formRef} className="bg-white rounded-2xl shadow-lg p-6 sm:p-8 scroll-mt-24">
       <div className="flex items-center justify-between mb-6">
@@ -217,27 +223,31 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Date
+              Date <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none z-10">
                 <Calendar className="w-5 h-5 text-slate-400" />
               </div>
               <input
                 type="date"
                 value={formData.date}
-                onChange={(e) => { setFormData({ ...formData, date: e.target.value }); setDateError(''); }}
-                className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition appearance-none ${dateError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
+                onChange={(e) => { 
+                  setFormData({ ...formData, date: e.target.value }); 
+                  setDateError(''); 
+                }}
+                className={`w-full pl-11 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition appearance-none ${
+                  dateError ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                }`}
                 style={{ 
                   colorScheme: 'light',
                   WebkitAppearance: 'none',
                   MozAppearance: 'textfield'
                 }}
-                required
               />
               {dateError && <p className="text-sm text-red-600 mt-2">{dateError}</p>}
             </div>
@@ -245,14 +255,18 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              Category
+              Category <span className="text-red-500">*</span>
             </label>
             <div>
               <select
                 value={formData.category}
-                onChange={(e) => { handleCategoryChange(e); setCategoryError(''); }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${categoryError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
-                required
+                onChange={(e) => { 
+                  handleCategoryChange(e); 
+                  setCategoryError(''); 
+                }}
+                className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${
+                  categoryError ? 'border-red-500 bg-red-50' : 'border-slate-300'
+                }`}
               >
                 <option value="">Select a category</option>
                 {categories.map((cat) => (
@@ -275,8 +289,13 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             <input
               type="text"
               value={formData.customCategory}
-              onChange={(e) => { setFormData({ ...formData, customCategory: e.target.value }); setCustomCategoryError(''); }}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${customCategoryError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
+              onChange={(e) => { 
+                setFormData({ ...formData, customCategory: e.target.value }); 
+                setCustomCategoryError(''); 
+              }}
+              className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${
+                customCategoryError ? 'border-red-500 bg-red-50' : 'border-slate-300'
+              }`}
               placeholder="Enter custom category name"
             />
             {customCategoryError && <p className="text-sm text-red-600 mt-2">{customCategoryError}</p>}
@@ -285,30 +304,36 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Amount
+            Amount <span className="text-red-500">*</span>
           </label>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-              <DollarSign className="w-5 h-5 text-slate-400" />
+          <div className={`flex items-center border-2 rounded-lg transition ${amountError ? 'border-red-500 bg-red-50' : 'border-slate-300'}`}>
+            <div className="flex-shrink-0 px-3 text-slate-400">
+              <DollarSign className="w-5 h-5" />
             </div>
             <input
               type="number"
               step="0.01"
               value={formData.amount}
-              onChange={(e) => { setFormData({ ...formData, amount: e.target.value }); setAmountError(''); }}
-              className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition ${amountError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
+              onChange={(e) => { 
+                setFormData({ ...formData, amount: e.target.value }); 
+                setAmountError(''); 
+              }}
+              className="flex-1 pr-4 py-3 bg-transparent focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition placeholder:text-slate-400"
               placeholder="0.00"
-              required
             />
-            {amountError && <p className="text-sm text-red-600 mt-2">{amountError}</p>}
           </div>
+          {amountError && <p className="text-sm text-red-600 mt-2">{amountError}</p>}
         </div>
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Upload Photo
+            Upload Photo <span className="text-red-500">*</span>
           </label>
-          <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-emerald-500 transition">
+          <div className={`border-2 border-dashed rounded-lg p-6 text-center transition ${
+            imageError 
+              ? 'border-red-500 bg-red-50' 
+              : 'border-slate-300 hover:border-emerald-500'
+          }`}>
             {previewUrl ? (
               <div className="relative inline-block">
                 <img
@@ -329,26 +354,24 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => { handleImageChange(e); setImageError(''); }}
+                  onChange={(e) => { 
+                    handleImageChange(e); 
+                    setImageError(''); 
+                  }}
                   className="hidden"
                 />
                 <Upload className="w-12 h-12 text-slate-400 mx-auto mb-2" />
                 <p className="text-slate-600 font-medium">Click to upload receipt</p>
-                <p className="text-sm text-slate-400 mt-1">PNG, JPG up to 10MB</p>
+                <p className="text-sm text-slate-400 mt-1">PNG, JPG up to 5MB</p>
               </label>
             )}
           </div>
           {imageError && <p className="text-sm text-red-600 mt-2">{imageError}</p>}
         </div>
 
-        {/* Receipt history panel (collapsible) */}
-        <div className="border border-slate-200 rounded-lg overflow-hidden">
-          
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Add Additional Comments
+            Add Additional Comments <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <div className="absolute left-3 top-3 pointer-events-none z-10">
@@ -356,8 +379,13 @@ export default function ExpenseForm({ onSuccess, onCancel }: ExpenseFormProps) {
             </div>
             <textarea
               value={formData.description}
-              onChange={(e) => { setFormData({ ...formData, description: e.target.value }); setDescriptionError(''); }}
-              className={`w-full pl-11 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none ${descriptionError ? 'border-red-400 ring-1 ring-red-300' : 'border-slate-300'}`}
+              onChange={(e) => { 
+                setFormData({ ...formData, description: e.target.value }); 
+                setDescriptionError(''); 
+              }}
+              className={`w-full pl-11 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition resize-none ${
+                descriptionError ? 'border-red-500 bg-red-50' : 'border-slate-300'
+              }`}
               placeholder="Add notes about this expense..."
               rows={4}
             />
