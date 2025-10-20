@@ -1,8 +1,8 @@
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
-import React, { Suspense, useEffect } from 'react';
+import React, { Suspense } from 'react';
 
 const Dashboard = React.lazy(() => import('./components/Dashboard'));
 
@@ -42,60 +42,31 @@ function PublicRoute({ children }: { children: JSX.Element }): JSX.Element {
   return user ? <Navigate to="/dashboard" replace /> : children;
 }
 
-function AppContent(): JSX.Element {
-  return (
-    <Routes>
-      <Route path="/login" element={
-        <PublicRoute>
-          <Login />
-        </PublicRoute>
-      } />
-      <Route
-        path="/dashboard/*"
-        element={
-          <ProtectedRoute>
-            <Suspense fallback={<GlobalLoadingScreen />}>
-              <Dashboard />
-            </Suspense>
-          </ProtectedRoute>
-        }
-      />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
-  );
-}
-
-function AppBootstrap(): JSX.Element {
-  const { user, isLoading } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (user) {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [user, navigate]);
-
-  if (isLoading) {
-    return <GlobalLoadingScreen />;
-  }
-
-  if (!user) {
-    return <Login />;
-  }
-
-  return (
-    <NotificationProvider>
-      <AppContent />
-    </NotificationProvider>
-  );
-}
-
 export default function App(): JSX.Element {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppBootstrap />
+        <NotificationProvider>
+          <Routes>
+            <Route path="/login" element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } />
+            <Route
+              path="/dashboard/*"
+              element={
+                <ProtectedRoute>
+                  <Suspense fallback={<GlobalLoadingScreen />}>
+                    <Dashboard />
+                  </Suspense>
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   );
