@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ Prevent mobile browsers (iOS Safari) from auto-zooming when inputs are focused.
+ Safari will zoom the viewport to make <16px> text readable when focusing inputs.
+ Set a minimum font-size for form controls on small screens to avoid this behavior.
+ */
+@media (max-width: 640px) {
+	input,
+	textarea,
+	select,
+	button {
+		font-size: 16px !important;
+		-webkit-text-size-adjust: 100%;
+	}
+}
